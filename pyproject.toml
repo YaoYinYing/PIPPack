@@ -38,8 +38,8 @@ lightning-cloud = "^0.5.64"
 torch_geometric="^2.4.0"
 
 torch = [
-    { platform = "linux", version = "^2.0.1+cpu", allow-prereleases = false, source = 'pytorch'},
-    { platform = "darwin",  version = "^2.0.1", allow-prereleases = false, source = 'pypi'}
+    { platform = "linux", version = "^2.0.1", source = 'pytorch'},
+    { platform = "darwin",  version = "^2.0.1", source = 'pypi'}
 ]
 torchvision = { version = "*", allow-prereleases = false}
 torchaudio = { version = "*", allow-prereleases = false}
