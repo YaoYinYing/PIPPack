@@ -250,8 +250,9 @@ class PIPPack:
 
         self.exp_cfg = None
 
-        if torch.cuda.is_available():
+        if torch.cuda.is_available() and not self.force_cpu:
             torch.cuda.empty_cache()
+
 
     def _download_weights(self):
         if not os.path.exists(self.weights_path):
