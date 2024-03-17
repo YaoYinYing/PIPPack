@@ -41,8 +41,14 @@ torch = [
     { platform = "linux", version = "^2.0.1+cpu", source = 'pytorch'},
     { platform = "darwin",  version = "^2.0.1", source = 'pypi'}
 ]
-torchvision = { version = "*", allow-prereleases = false}
-torchaudio = { version = "*", allow-prereleases = false}
+torchvision = [
+    { platform = "linux", version = "*+cpu", source = 'pytorch'},
+    { platform = "darwin",  version = "^2.0.1", source = 'pypi'}
+]
+torchaudio = [
+    { platform = "linux", version = "^*+cpu", source = 'pytorch'},
+    { platform = "darwin",  version = "^2.0.1", source = 'pypi'}
+]
 
 hydra-core= "*"
 omegaconf = "*"
