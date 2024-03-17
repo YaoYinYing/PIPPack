@@ -43,11 +43,11 @@ torch = [
 ]
 torchvision = [
     { platform = "linux", version = "*", source = 'pytorch'},
-    { platform = "darwin",  version = "^2.0.1", source = 'pypi'}
+    { platform = "darwin",  version = "*", source = 'pypi'}
 ]
 torchaudio = [
-    { platform = "linux", version = "^*", source = 'pytorch'},
-    { platform = "darwin",  version = "^2.0.1", source = 'pypi'}
+    { platform = "linux", version = "*", source = 'pytorch'},
+    { platform = "darwin",  version = "*", source = 'pypi'}
 ]
 
 hydra-core= "*"
