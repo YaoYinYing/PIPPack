@@ -42,11 +42,11 @@ torch = [
     { platform = "darwin",  version = "^2.0.1", source = 'pypi'}
 ]
 torchvision = [
-    { platform = "linux", version = "*+cpu", source = 'pytorch'},
+    { platform = "linux", version = "*", source = 'pytorch'},
     { platform = "darwin",  version = "^2.0.1", source = 'pypi'}
 ]
 torchaudio = [
-    { platform = "linux", version = "^*+cpu", source = 'pytorch'},
+    { platform = "linux", version = "^*", source = 'pytorch'},
     { platform = "darwin",  version = "^2.0.1", source = 'pypi'}
 ]
 
