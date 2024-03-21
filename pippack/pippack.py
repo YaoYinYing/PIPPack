@@ -378,6 +378,8 @@ class PIPPack:
         # Get full atom proteins
         protein_strings = pdbs_from_prediction(sample_results)
 
+        repacked_pdb_fp=[]
+
         for idx, protein_string in enumerate(protein_strings):
             protein_name = pdb_names[idx]
             pdb_out = os.path.join(output_dir, protein_name + ".relaxed.pdb")
@@ -386,30 +388,62 @@ class PIPPack:
             print("Finished packing:", pdb_out)
             with open(pdb_out, "w") as f:
                 f.write(protein_string)
+                repacked_pdb_fp.append(pdb_out)
+        return repacked_pdb_fp
+
+    def _fix_mutant_sequence(self,mutant_sequence) -> list[list[str]]:
+        if isinstance(mutant_sequence, list) and isinstance(
+            mutant_sequence[0], list
+        ) and isinstance(
+            mutant_sequence[0][0], str
+        ):
+            return mutant_sequence
+
+        if isinstance(mutant_sequence, str):
+            return [[mutant_sequence]]
+        if isinstance(mutant_sequence, list) and isinstance(
+            mutant_sequence[0], str
+        ):
+            return [mutant_sequence]
+        
+        raise TypeError(f'typing of mutant_sequence must be Union[str, list[str], list[list[str]]]')
+    
+    def transform_all_structure(self,proteins):
+        # Transform proteins
+        return [
+            (
+                protein[0],
+                transform_structure(
+                    protein[1], self.exp_cfg.model.n_chi_bins, sc_d_mask_from_seq=True
+                ),
+            )
+            for protein in proteins
+        ]
 
     def _run_repack_batch(
         self,
-        pdb_path,
+        pdb_path, # a given pdb path for mutagenesis or a dir of pdbs for repacking
         output_dir,
         mutant_sequence: Union[str, list[str], list[list[str]]] = None,
     ):
-        pdb_files = glob.glob(os.path.join(pdb_path, "*.pdb"))
+        
         # Get the dataset
         if mutant_sequence:
-            if isinstance(mutant_sequence, str):
-                mutant_sequence = [[mutant_sequence]]
-            elif isinstance(mutant_sequence, list) and isinstance(
-                mutant_sequence[0], str
-            ):
-                mutant_sequence = [mutant_sequence]
-            assert len(pdb_files) == 1
-            pdb_file = pdb_files[0]
+            if not os.path.isfile(pdb_path):
+                raise RuntimeError(f'mutagenesis requires a valid pdb file: {pdb_path=}')
+            mutant_sequence=self._fix_mutant_sequence(mutant_sequence)
+            
+            pdb_file = pdb_path
             proteins = replace_protein_sequence(
                 vars(from_pdb_file(pdb_file, mse_to_met=True)),
                 os.path.basename(pdb_file)[:-4],
                 mutant_sequence,
             )
         else:
+            if not os.path.isdir(pdb_path):
+                raise RuntimeError(f'repacking requires a valid pdb dir: {pdb_path=}')
+            
+            pdb_files = glob.glob(os.path.join(pdb_path, "*.pdb"))
             proteins = [
                 (
                     os.path.basename(pdb_file)[:-4],
@@ -419,15 +453,7 @@ class PIPPack:
             ]
 
         # Transform proteins
-        proteins = [
-            (
-                protein[0],
-                transform_structure(
-                    protein[1], self.exp_cfg.model.n_chi_bins, sc_d_mask_from_seq=True
-                ),
-            )
-            for protein in proteins
-        ]
+        proteins=self.transform_all_structure(proteins=proteins)
 
         print(f"Running repack with {len(proteins)} tasks.")
         batches = self._sorted_minibatches(proteins=proteins)
@@ -436,10 +462,15 @@ class PIPPack:
         # Make output dir
         os.makedirs(output_dir, exist_ok=True)
 
+        repacked_pdb_fps=[]
+
         # Loop over all desired proteins
         for batch in batches:
-            self._process_a_batch(batch=batch, output_dir=output_dir)
+            repacked_pdb_fp=self._process_a_batch(batch=batch, output_dir=output_dir)
+            repacked_pdb_fps.extend(repacked_pdb_fp)
+        return repacked_pdb_fps
 
+    # repack a given pdb to a given output
     def _run_repack_single(
         self,
         pdb_file,
@@ -447,12 +478,7 @@ class PIPPack:
         mutant_sequence: Union[str, list[str], list[list[str]]] = None,
     ):
         if mutant_sequence:
-            if isinstance(mutant_sequence, str):
-                mutant_sequence = [[mutant_sequence]]
-            elif isinstance(mutant_sequence, list) and isinstance(
-                mutant_sequence[0], str
-            ):
-                mutant_sequence = [mutant_sequence]
+            mutant_sequence=self._fix_mutant_sequence(mutant_sequence)
             proteins = replace_protein_sequence(
                 vars(from_pdb_file(pdb_file, mse_to_met=True)),
                 os.path.basename(pdb_file)[:-4],
@@ -467,15 +493,7 @@ class PIPPack:
             ]
 
         # Transform proteins
-        proteins = [
-            (
-                protein[0],
-                transform_structure(
-                    protein[1], self.exp_cfg.model.n_chi_bins, sc_d_mask_from_seq=True
-                ),
-            )
-            for protein in proteins
-        ]
+        proteins = self.transform_all_structure(proteins=proteins)
 
         print(f"Running repack with {len(proteins)} tasks.")
 
